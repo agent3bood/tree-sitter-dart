@@ -2,10 +2,15 @@
 
 ; Methods
 ; --------------------
-;; TODO: does not work
-;(function_type
-  ;name: (identifier) @method)
 (super) @function
+
+(function_expression_body
+  (identifier) @function)
+
+; NOTE: This query is a bit of a work around for the fact that the dart grammar doesn't
+; specifically identify a node as a function call
+(((identifier) @function (#match? @function "^_?[a-z]"))
+ . (selector . (argument_part))) @function
 
 ; Annotations
 ; --------------------
@@ -26,6 +31,23 @@
 ) @none
 
 (escape_sequence) @string.escape
+
+[
+  "("
+  ")"
+  "["
+  "]"
+  "{"
+  "}"
+]  @punctuation.bracket
+
+(type_arguments
+  "<" @punctuation.bracket
+  ">" @punctuation.bracket)
+
+(type_parameters
+  "<" @punctuation.bracket
+  ">" @punctuation.bracket)
 
 [
  "@"
@@ -50,15 +72,6 @@
  (additive_operator)
 ] @operator
 
-[
-  "("
-  ")"
-  "["
-  "]"
-  "{"
-  "}"
-]  @punctuation.bracket
-
 ; Delimiters
 ; --------------------
 [
@@ -79,17 +92,12 @@
 (scoped_identifier
   scope: (identifier) @type)
 (function_signature
-  name: (identifier) @method)
+  name: (identifier) @function)
 (getter_signature
-  (identifier) @method)
+  (identifier) @function)
 (setter_signature
-  name: (identifier) @method)
-(enum_declaration
-  name: (identifier) @type)
-(enum_constant
-  name: (identifier) @type)
+  name: (identifier) @function)
 (type_identifier) @type
-(void_type) @type
 
 ((scoped_identifier
   scope: (identifier) @type
@@ -98,24 +106,48 @@
 
 (type_identifier) @type
 
+; Enums
+; -------------------
+(enum_declaration
+  name: (identifier) @type)
+(enum_constant
+  name: (identifier) @identifier.constant)
+
 ; Variables
 ; --------------------
 ; var keyword
 (inferred_type) @keyword
 
-(const_builtin) @constant.builtin
-(final_builtin) @constant.builtin
-
 ((identifier) @type
- (#match? @type "^_?[A-Z]"))
+ (#match? @type "^_?[A-Z].*[a-z]"))
 
 ("Function" @type)
 
+(this) @variable.builtin
+
 ; properties
-; TODO: add method/call_expression to grammar and
-; distinguish method call from variable access
+(expression_statement
+  (selector
+  	(unconditional_assignable_selector
+    	(identifier) @function))
+  (selector (argument_part (arguments)))
+)
+(expression_statement
+  (cascade_section
+  	(cascade_selector (identifier) @function)
+    (argument_part (arguments))
+  )
+)
+
 (unconditional_assignable_selector
   (identifier) @property)
+
+(conditional_assignable_selector
+  (identifier) @property)
+
+(cascade_section
+  (cascade_selector
+    (identifier) @property))
 
 ; assignments
 (assignment_expression
@@ -153,70 +185,78 @@
 
 ; Keywords
 ; --------------------
-["import" "library" "export"] @include
-
-; Reserved words (cannot be used as identifiers)
-; TODO: "rethrow" @keyword
 [
-    ; "assert"
-    (case_builtin)
-    "extension"
-    "on"
-    "class"
-    "enum"
-    "extends"
-    "in"
-    "is"
-    "new"
-    "return"
-    "super"
-    "with"
-] @keyword
-
-
-; Built in identifiers:
-; alone these are marked as keywords
-[
+    (assert_builtin)
+    (break_statement)
+    (const_builtin)
+    (part_of_builtin)
+    (rethrow_builtin)
+    (void_type)
     "abstract"
     "as"
     "async"
     "async*"
-    "yield"
-    "sync*"
     "await"
+    "base"
+    "case"
+    "catch"
+    "class"
+    "continue"
     "covariant"
+    "default"
     "deferred"
+    "do"
     "dynamic"
+    "else"
+    "enum"
+    "export"
+    "extends"
+    "extension"
     "external"
     "factory"
+    "false"
+    "final"
+    "finally"
+    "for"
+    "Function"
     "get"
+    "hide"
+    "if"
     "implements"
+    "import"
+    "in"
     "interface"
+    "is"
+    "late"
     "library"
-    "operator"
     "mixin"
+    "new"
+    "null"
+    "on"
+    "operator"
     "part"
+    "required"
+    "return"
+    "sealed"
     "set"
     "show"
     "static"
+    "super"
+    "switch"
+    "sync*"
+    "throw"
+    "true"
+    "try"
     "typedef"
+    "var"
+    "when"
+    "while"
+    "with"
+    "yield"
 ] @keyword
 
-; when used as an identifier:
-((identifier) @variable.builtin
- (#vim-match? @variable.builtin "^(abstract|as|covariant|deferred|dynamic|export|external|factory|Function|get|implements|import|interface|library|operator|mixin|part|set|static|typedef)$"))
-
-["if" "else" "switch" "default"] @conditional
-
-[
-  "try"
-  "throw"
-  "catch"
-  "finally"
-  (break_statement)
-] @exception
-
-["do" "while" "continue" "for"] @repeat
+; Variable
+(identifier) @variable
 
 ; Error
 (ERROR) @error

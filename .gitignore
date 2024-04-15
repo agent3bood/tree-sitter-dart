@@ -18,6 +18,8 @@ pubspec.lock
 *.dll
 *.dylib
 doc
+.vscode
+target
 **/target
 **/cargo-target
 .DS_Store
